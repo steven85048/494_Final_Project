@@ -58,38 +58,46 @@ dataFrame = pd.get_dummies( dataFrame, drop_first=True)
 # ----------------- HYPERPARMETER SEARCHING ---------------------
 # ---------------------------------------------------------------
 
+
 y = dataFrame[['suicides_no']].values
 X = dataFrame.drop('suicides_no', axis=1).values
 
 # Standardize quantitative data to 0-1 range
 scalar = MinMaxScaler( feature_range = (0, 1) )
 X = scalar.fit_transform(X)
+y = scalar.fit_transform(y)
 
+'''
 # We optimize our hyperparameters with grid search:
 # @param max_depth = number of leaves in the tree
 # @param n_estimators = number of trees in the model (will be summed up in regression)
 gridSearch = GridSearchCV(  estimator = RandomForestRegressor(),
                             param_grid = {  'max_depth': range(4,8),
-                                           'n_estimators': (10, 50, 100, 1000) },
+                                           'n_estimators': (5, 10, 20, 30) },
                             cv = 5,
                             scoring = 'neg_mean_squared_error',
                             verbose = 0,
                             n_jobs = -1 )
 
-gridResult = gridSearch.fit(X, y)
+gridResult = gridSearch.fit(X, y.ravel())
 gridBestParams = gridResult.best_params_
 
 print( gridBestParams )
+'''
 
 # ---------------------------------------------------------------
 # ----------------- FINAL MODEL ---------------------------------
 # ---------------------------------------------------------------
+
+gridBestParams = {}
+gridBestParams["max_depth"] = 25
+gridBestParams["n_estimators"] = 5
 
 forestModel = RandomForestRegressor ( max_depth = gridBestParams["max_depth"],
                                       n_estimators = gridBestParams["n_estimators"],
                                       random_state = False,
                                       verbose = False )
 
-cvScore = cross_val_score( forestModel, X, y, cv = 10, scoring = 'neg_mean_absolute_error' )
+cvScore = cross_val_score( forestModel, X, y.ravel(), cv = 10, scoring = 'explained_variance' )
 print("The final cross-validation score is: ")
-print(cvScore)
+print(cvScore.mean())
