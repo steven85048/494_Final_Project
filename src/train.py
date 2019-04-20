@@ -2,15 +2,16 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns #for plotting
-from sklearn.ensemble import RandomForestRegressor #for the model
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.tree import export_graphviz #plot tree
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.ensemble import RandomForestRegressor
+#from sklearn.tree import export_graphviz #plot tree
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import mean_squared_error, make_scorer
-from sklearn.metrics import roc_curve, auc #for model evaluation
-from sklearn.metrics import classification_report #for model evaluation
-from sklearn.metrics import confusion_matrix #for model evaluation
-from sklearn.model_selection import train_test_split #for data splitting
+#from sklearn.metrics import roc_curve, auc #for model evaluation
+#from sklearn.metrics import classification_report #for model evaluation
+#from sklearn.metrics import confusion_matrix #for model evaluation
+#from sklearn.model_selection import train_test_split #for data splitting
+from sklearn.model_selection import cross_val_predict, GridSearchCV
 import eli5 #for purmutation importance
 from eli5.sklearn import PermutationImportance
 import shap #for SHAP values
@@ -54,41 +55,41 @@ dataFrame = pd.get_dummies( dataFrame, drop_first=True)
 # print( dataFrame.isnull().sum() )
 
 # ---------------------------------------------------------------
-# ---------------------------- MODEL ----------------------------
+# ----------------- HYPERPARMETER SEARCHING ---------------------
 # ---------------------------------------------------------------
-
-# Split the data into train/test; we use the number of suicides as the predictor (must also remove from the dataframe)
-# [Tuning parameter] 80-20 train-test split
-xTrain, xTest, yTrain, yTest = train_test_split(dataFrame.drop('suicides_no', 1), dataFrame['suicides_no'], test_size = .2, random_state = 11)
-
-# [Tuning parameter] max_depth = 5
-random_forest_model = RandomForestRegressor( random_state = 42 )
-random_forest_model.fit( xTrain, yTrain )
 
 y = dataFrame[['suicides_no']].values
 X = dataFrame.drop('suicides_no', axis=1).values
 
-random_forest_model = RandomForestRegressor( random_state = 42 )
-print( cross_val_score(random_forest_model, X, y, cv = 5).mean() )
+# Standardize quantitative data to 0-1 range
+scalar = MinMaxScaler( feature_range = (0, 1) )
+X = scalar.fit_transform(X)
 
-# Decision tree plot:
-#estimator = random_forest_model.estimators_[1]
-#feature_names = [i for i in xTrain.columns]
-#yTrainStr = yTrain.astype('str')
-#yTrainStr = yTrainStr.values
+# We optimize our hyperparameters with grid search:
+# @param max_depth = number of leaves in the tree
+# @param n_estimators = number of trees in the model (will be summed up in regression)
+gridSearch = GridSearchCV(  estimator = RandomForestRegressor(),
+                            param_grid = {  'max_depth': range(4,8),
+                                           'n_estimators': (10, 50, 100, 1000) },
+                            cv = 5,
+                            scoring = 'neg_mean_squared_error',
+                            verbose = 0,
+                            n_jobs = -1 )
 
-#tree_dot_dir = OUTPUT_DIR + FOREST_OUT_DOT
-#tree_png_dir = OUTPUT_DIR + FOREST_OUT_PNG
+gridResult = gridSearch.fit(X, y)
+gridBestParams = gridResult.best_params_
 
-#export_graphviz(estimator, 
-#                out_file= tree_dot_dir, 
-#                feature_names = feature_names,
-#                rounded = True, proportion = True,
-#                label = 'root',
-#                precision = 2, filled = True)
+print( gridBestParams )
 
-#from subprocess import call
-#call(['dot', '-Tpng', tree_dot_dir, '-o', tree_png_dir, '-Gdpi=600' ])
+# ---------------------------------------------------------------
+# ----------------- FINAL MODEL ---------------------------------
+# ---------------------------------------------------------------
 
-#from IPython.display import Image
-#Image(filename = tree_png_dir)
+forestModel = RandomForestRegressor ( max_depth = gridBestParams["max_depth"],
+                                      n_estimators = gridBestParams["n_estimators"],
+                                      random_state = False,
+                                      verbose = False )
+
+cvScore = cross_val_score( forestModel, X, y, cv = 10, scoring = 'neg_mean_absolute_error' )
+print("The final cross-validation score is: ")
+print(cvScore)
