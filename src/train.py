@@ -1,10 +1,12 @@
+from data_clean import preprocess_data_frame, preprocess_split_data
+from testing_utils import print_class_count
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns #for plotting
-from sklearn.preprocessing import MinMaxScaler, LabelEncoder
+from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
-#from sklearn.tree import export_graphviz #plot tree
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import mean_squared_error, make_scorer, confusion_matrix
 #from sklearn.metrics import roc_curve, auc #for model evaluation
@@ -29,9 +31,12 @@ OUTPUT_DIR = '../output/'
 # ---------------------------------------------------------------
 
 dataFrame = pd.read_csv(DATA_DIR)
+dataFrame = preprocess_data_frame( dataFrame )
 
-print( dataFrame.shape )
-print( dataFrame.dtypes )
+#print( dataFrame.groupby('y').count() )
+
+#print( dataFrame.shape )
+#print( dataFrame.dtypes )
 
 # ---------------------------------------------------------------
 # ----------------- HYPERPARMETER SEARCHING ---------------------
@@ -40,16 +45,17 @@ print( dataFrame.dtypes )
 y = dataFrame[['y']].values
 X = dataFrame.drop(['y'], axis=1).values
 
-# Standardize quantitative data
-scalar = MinMaxScaler()
-X = scalar.fit_transform(X)
+X, y = preprocess_split_data( X, y )
 
+print_class_count(y)
+
+'''
 # We optimize our hyperparameters with grid search:
 # @param max_depth = number of leaves in the tree
 # @param n_estimators = number of trees in the model (will be summed up in regression)
 gridSearch = GridSearchCV(  estimator = RandomForestClassifier(),
                             param_grid = {  'max_depth': range(4, 20),
-                                           'n_estimators': range(10, 100) },
+                                           'n_estimators': range(10, 40) },
                             cv = 5,
                             scoring = 'accuracy',
                             verbose = 0,
@@ -59,16 +65,15 @@ gridResult = gridSearch.fit(X, y.ravel())
 gridBestParams = gridResult.best_params_
 
 print( gridBestParams )
+'''
 
 # ---------------------------------------------------------------
 # ---------------------- FINAL MODEL ----------------------------
 # ---------------------------------------------------------------
 
-'''
-gridBestParams = {}
-gridBestParams["max_depth"] = 4
-gridBestParams["n_estimators"] = 18
-'''
+gridBestParams = {}     
+gridBestParams["max_depth"] = 13
+gridBestParams["n_estimators"] = 27
 
 forestModel = RandomForestClassifier ( max_depth = gridBestParams["max_depth"],
                                        n_estimators = gridBestParams["n_estimators"],
@@ -76,12 +81,12 @@ forestModel = RandomForestClassifier ( max_depth = gridBestParams["max_depth"],
                                        random_state = False,
                                        verbose = False )
 
+
 # CV-Score
-'''
 cvScore = cross_val_score( forestModel, X, y.ravel(), cv = 5, scoring = 'accuracy' )
 print("The final cross-validation score is: ")
 print(cvScore.mean())
-'''
+
 
 # Confusion Matrix
 predictedY = cross_val_predict( forestModel, X, y.ravel(), cv = 5 )
