@@ -9,8 +9,7 @@ def print_class_count( y ):
         else:
             num_one += 1
 
-    print( "The number of zeroes and ones is: " )
-    print( str(num_zero) + " " + str(num_one))
+    print( "zeroes: " + str(num_zero) + " ; ones: " + str(num_one))
 
 
 def pca_plot_2d( X, y ):   
