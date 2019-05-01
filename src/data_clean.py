@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
-from imblearn.under_sampling import RandomUnderSampler
+from imblearn.combine import SMOTETomek, SMOTEENN
+from imblearn.under_sampling import RandomUnderSampler, ClusterCentroids, TomekLinks, AllKNN, InstanceHardnessThreshold, NearMiss, RepeatedEditedNearestNeighbours
 from imblearn.over_sampling import SMOTE, RandomOverSampler
 from sklearn.preprocessing import MinMaxScaler
 
@@ -13,10 +14,26 @@ def group_output_type( dataFrame ):
 
 # Random sample - returns x and y
 def under_sample_random( X, y ):
-    rus = RandomUnderSampler()
+    rus = RandomUnderSampler( random_state = 30 )
 
     x_rus, y_rus = rus.fit_sample( X, y )
     return x_rus, y_rus
+
+def under_sample_centroids( X, y ):
+    cc_x = X
+    cc_y = y
+
+    cc = RandomUnderSampler()
+    #cc2 = SMOTEENN( )
+    #cc3 = InstanceHardnessThreshold()
+    #cc4 = RandomUnderSampler()
+
+    cc_x, cc_y = cc.fit_sample( cc_x, cc_y )
+    #cc_x, cc_y = cc2.fit_sample( cc_x, cc_y )
+    #cc_x, cc_y = cc3.fit_sample( cc_x, cc_y )
+    #cc_x, cc_y = cc4.fit_sample( cc_x, cc_y )
+
+    return cc_x, cc_y 
 
 # SMOTE - upsample less frequent values
 def smote_over_sample( X, y ):
@@ -35,42 +52,3 @@ def min_max_scalar( X ):
     scalar = MinMaxScaler()
     X = scalar.fit_transform(X)
     return X
-
-def preprocess_test_set( X, y ):
-    X = min_max_scalar(X)
-    X, y = under_sample_random( X, y )
-    return X, y
-
-# ---------------------------- PUBLIC METHODS ------------------------------
-
-def preprocess_data_frame( dataFrame ):
-    dataFrame = group_output_type( dataFrame )
-    return dataFrame
-
-# num_split = number of zero/one samples that should be used for the training set
-def preprocess_split_data( dataFrame, percent_split ):
-    one_samples = dataFrame.query('y == 1')
-    zero_samples = dataFrame.query('y == 0')
-
-    one_sample_train = one_samples.sample(frac = percent_split )
-    one_sample_test = one_samples.drop(one_sample_train.index)
-
-    zero_sample_train = zero_samples.sample(frac = percent_split )
-    zero_sample_test = zero_samples.drop(zero_sample_train.index)
-
-    train_data_frame_list = [ one_sample_train, zero_sample_train ]
-    test_data_frame_list = [ one_sample_test, zero_sample_test ]
-
-    train_data_frame = pd.concat( train_data_frame_list )
-    test_data_frame = pd.concat( test_data_frame_list )
-
-    train_y = train_data_frame[['y']].values
-    train_x = train_data_frame.drop(['y'], axis = 1).values
-
-    test_y = test_data_frame[['y']].values
-    test_x = test_data_frame.drop(['y'], axis = 1).values
-
-    train_x, train_y = preprocess_test_set( train_x, train_y )
-    test_x = min_max_scalar(test_x)
-
-    return train_x, train_y, test_x, test_y

@@ -1,4 +1,6 @@
 
+import matplotlib.pyplot as plt  
+
 def print_class_count( y ):
     # Obtain the number of zeroes and ones
     num_zero = 0
@@ -11,7 +13,16 @@ def print_class_count( y ):
 
     print( "zeroes: " + str(num_zero) + " ; ones: " + str(num_one))
 
+def plot_roc_curve( false_positive_rate, true_positive_rate ):
+    plt.plot( false_positive_rate, true_positive_rate, color = 'orange', label = 'ROC' )
+    plt.plot([0,1], [0,1], color = 'darkblue', linestyle = '--')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiving Operating Characteristic (ROC) Curve')
+    plt.legend()
+    plt.show()
 
+'''
 def pca_plot_2d( X, y ):   
     pca = PCA( n_components = 2 )
     pcaX = pca.fit_transform(X)
@@ -35,3 +46,4 @@ def pca_plot_2d( X, y ):
     plt.title("2D PCA")
     plt.legend(loc='upper right')
     plt.show()
+'''
