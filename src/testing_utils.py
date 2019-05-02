@@ -1,6 +1,9 @@
 
 import matplotlib.pyplot as plt  
 
+import pandas as pd
+from sklearn.decomposition import PCA
+
 def print_class_count( y ):
     # Obtain the number of zeroes and ones
     num_zero = 0
@@ -22,7 +25,6 @@ def plot_roc_curve( false_positive_rate, true_positive_rate ):
     plt.legend()
     plt.show()
 
-'''
 def pca_plot_2d( X, y ):   
     pca = PCA( n_components = 2 )
     pcaX = pca.fit_transform(X)
@@ -34,7 +36,7 @@ def pca_plot_2d( X, y ):
     markers = ['o', 's']
     labels = ['R1', 'R2']
 
-    for line in dataFrame.itertuples():
+    for line in PCA_dataframe.itertuples():
         classIndex = 0 if line.y == 0 else 1
 
         plt.scatter(
@@ -44,6 +46,5 @@ def pca_plot_2d( X, y ):
         )
 
     plt.title("2D PCA")
-    plt.legend(loc='upper right')
+    #plt.legend(loc='upper right')
     plt.show()
-'''

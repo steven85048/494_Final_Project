@@ -1,5 +1,5 @@
 from data_clean import group_output_type, smote_over_sample, under_sample_random, under_sample_centroids
-from testing_utils import print_class_count, plot_roc_curve
+from testing_utils import print_class_count, plot_roc_curve, pca_plot_2d
 
 import numpy as np
 import pandas as pd
@@ -74,22 +74,28 @@ for train_index, test_index in skf.split( X, y ):
 scores_df = pd.DataFrame( columns = ['ROC_AUC', 'Accuracy', 'F1'] )
 
 #forestModel = RandomForestClassifier (  n_estimators = 30, criterion = 'gini', max_features = 'sqrt' )
-#forestModel = GradientBoostingClassifier( learning_rate = .05, subsample = .70, n_estimators = 6000 )
-#forestModel = AdaBoostClassifier( n_estimators = 100 )
+#forestModel = GradientBoostingClassifier( learning_rate = .2 , n_estimators = 60 )
+#forestModel = AdaBoostClassifier( n_estimators = 100, learning_rate = 1 )
 #forestModel = BalancedBaggingClassifier( n_estimators = 500, max_samples = .8, bootstrap_features = True )
-forestModel = BalancedRandomForestClassifier( n_estimators = 1500 )
+forestModel = BalancedRandomForestClassifier( n_estimators = 500 )
 
 for cvIndex, data_set in enumerate( data_splits ):
     train_x, test_x, train_y, test_y = data_set[0], data_set[1], data_set[2], data_set[3]
 
     # oversample with SMOTE
-    #train_x, train_y = under_sample_centroids( train_x, train_y )
+    train_x, train_y = under_sample_random( train_x, train_y )
+    test_x, test_y = under_sample_random(test_x, test_y)
     print_class_count( train_y )
 
     # apply scalar normalization
     scalar = StandardScaler()
     test_x = scalar.fit_transform(test_x)
     train_x = scalar.fit_transform(train_x)
+
+    '''
+    # Plot reduced PCA plot
+    pca_plot_2d( train_x, train_y )
+    '''
 
     # fit the model to the training data and predict the y with the resultant model
     forestModel.fit( train_x, train_y )
